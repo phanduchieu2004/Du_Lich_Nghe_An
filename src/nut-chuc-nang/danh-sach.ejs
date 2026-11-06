@@ -1,0 +1,13 @@
+<%
+  const registry = {
+    'quan-ly-co-so-du-lieu': 'quan-ly-co-so-du-lieu',
+    'vi-tri-cua-toi': 'vi-tri-cua-toi'
+  };
+  for (const buttonId of buttonIds) {
+    const buttonView = registry[buttonId];
+    if (!buttonView) {
+      throw new Error(`Unknown function button: ${buttonId}`);
+    }
+%>
+  <%- include(buttonView) %>
+<% } %>

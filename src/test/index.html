@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f4f7f5" />
+    <title>Kiểm thử CSDL | Atlas</title>
+    <style>
+      :root {
+        font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #1b302c;
+        background: #f4f7f5;
+        font-synthesis: none;
+        --green: #14836e;
+        --muted: #74837f;
+        --line: #e4ebe7;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-width: 320px; }
+      button, input, textarea, select { font: inherit; }
+      button, a { -webkit-tap-highlight-color: transparent; }
+      button { cursor: pointer; }
+      .topbar { height: 68px; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; background: #fff; border-bottom: 1px solid var(--line); }
+      .brand { display: flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; }
+      .brand-mark { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 11px; color: white; background: var(--green); font-weight: 800; }
+      .brand strong { font-size: 15px; }
+      .brand small { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; font-weight: 500; }
+      .back-link { color: var(--green); text-decoration: none; font-size: 13px; font-weight: 700; }
+      .layout { min-height: calc(100vh - 68px); display: grid; grid-template-columns: 265px minmax(0, 1fr); }
+      aside { padding: 22px 14px; background: #fff; border-right: 1px solid var(--line); }
+      .aside-heading { margin: 0 10px 12px; color: #98a49f; font-size: 10px; font-weight: 800; letter-spacing: 1.2px; }
+      .table-filter { width: 100%; margin-bottom: 14px; padding: 10px 11px; border: 1px solid var(--line); border-radius: 9px; outline: 0; font-size: 12px; }
+      .table-filter:focus, .search:focus { border-color: #8bc7b6; box-shadow: 0 0 0 3px #e0f3ed; }
+      .table-list { max-height: calc(100vh - 200px); overflow: auto; display: grid; gap: 3px; }
+      .table-link { display: flex; align-items: center; gap: 9px; width: 100%; padding: 9px 10px; border: 0; border-radius: 8px; background: transparent; color: #53635e; text-align: left; font-size: 12px; overflow-wrap: anywhere; }
+      .table-link::before { content: ""; width: 6px; height: 6px; flex: none; border-radius: 50%; background: #bdc9c4; }
+      .table-link:hover, .table-link.active { background: #eff8f4; color: #126f5d; }
+      .table-link.active::before { background: var(--green); }
+      main { min-width: 0; padding: 30px clamp(18px, 4vw, 52px); }
+      .page-heading { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 22px; }
+      .eyebrow { margin: 0 0 7px; color: var(--green); font-size: 10px; font-weight: 800; letter-spacing: 1.4px; }
+      h1 { margin: 0; font-size: clamp(22px, 3vw, 29px); letter-spacing: -.8px; }
+      .subheading { margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+      .stats { display: flex; gap: 10px; }
+      .stat { min-width: 110px; padding: 12px 15px; border: 1px solid var(--line); border-radius: 11px; background: #fff; }
+      .stat span { display: block; color: var(--muted); font-size: 10px; }
+      .stat strong { display: block; margin-top: 5px; font-size: 17px; }
+      .toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 24px 0 13px; }
+      .search { width: min(390px, 100%); padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; outline: 0; background: #fff; font-size: 12px; }
+      .button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 37px; padding: 0 13px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: #344640; font-size: 12px; font-weight: 700; }
+      .button:hover { border-color: #9dcdbf; background: #f7fbf9; }
+      .button.primary { border-color: var(--green); background: var(--green); color: #fff; }
+      .button.primary:hover { background: #0c6d5b; }
+      .button.danger { color: #b64242; }
+      .button.small { min-height: 29px; padding: 0 9px; font-size: 11px; }
+      .message { display: none; margin: 14px 0; padding: 12px 14px; border: 1px solid #f0d7be; border-radius: 9px; background: #fff8f1; color: #80522d; font-size: 12px; line-height: 1.5; }
+      .message.visible { display: block; }
+      .table-card { overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+      .table-scroll { overflow: auto; max-height: calc(100vh - 365px); }
+      table { width: 100%; border-collapse: collapse; font-size: 12px; white-space: nowrap; }
+      th, td { padding: 11px 13px; border-bottom: 1px solid #edf1ef; text-align: left; vertical-align: top; }
+      th { position: sticky; top: 0; z-index: 1; background: #f7faf8; color: #687872; font-size: 10px; letter-spacing: .3px; }
+      td { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+      tr:last-child td { border-bottom: 0; }
+      .actions { display: flex; gap: 6px; }
+      .empty { padding: 40px 18px; color: var(--muted); text-align: center; font-size: 13px; }
+      .table-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
+      .pager { display: flex; gap: 7px; }
+      dialog { width: min(610px, calc(100% - 28px)); max-height: 86vh; padding: 0; border: 0; border-radius: 14px; box-shadow: 0 20px 70px #112c2450; }
+      dialog::backdrop { background: #14251f80; }
+      .dialog-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid var(--line); }
+      .dialog-head h2 { margin: 0; font-size: 17px; }
+      .dialog-body { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; max-height: 58vh; overflow: auto; padding: 19px 22px; }
+      .field { display: grid; gap: 6px; min-width: 0; }
+      .field.wide { grid-column: 1 / -1; }
+      .field label { color: #5e6f69; font-size: 11px; font-weight: 700; overflow-wrap: anywhere; }
+      .field label small { color: #a0aaa6; font-weight: 500; }
+      .field input, .field textarea, .field select { width: 100%; min-width: 0; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; outline: 0; font-size: 12px; }
+      .field textarea { min-height: 78px; resize: vertical; }
+      .field input:focus, .field textarea:focus, .field select:focus { border-color: #8bc7b6; box-shadow: 0 0 0 3px #e0f3ed; }
+      .field input:disabled { background: #f3f6f4; color: #87948e; }
+      .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 22px; border-top: 1px solid var(--line); }
+      .import-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+      .import-help { margin: 0 0 14px; color: var(--muted); font-size: 12px; line-height: 1.65; }
+      .import-summary { margin: 0; color: #53635e; font-size: 13px; line-height: 1.6; }
+      .import-errors { max-height: 42vh; overflow: auto; margin: 14px 0 0; padding: 12px 12px 12px 32px; border: 1px solid #f0d7be; border-radius: 9px; background: #fff8f1; color: #80522d; font-size: 12px; line-height: 1.6; }
+      .import-errors:empty { display: none; }
+      .import-success { padding: 11px 13px; border: 1px solid #d5ebe2; border-radius: 9px; background: #f0f8f4; color: #176b58; font-size: 12px; }
+      @media (max-width: 820px) {
+        .layout { grid-template-columns: 220px minmax(0, 1fr); }
+        .stats { display: none; }
+        main { padding: 24px 17px; }
+      }
+      @media (max-width: 600px) {
+        .topbar { height: 60px; padding: 0 15px; }
+        .layout { display: block; min-height: calc(100vh - 60px); }
+        aside { padding: 12px; border-right: 0; border-bottom: 1px solid var(--line); }
+        .aside-heading { display: none; }
+        .table-filter { margin-bottom: 9px; }
+        .table-list { max-height: 112px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .table-link { padding: 7px; }
+        main { padding: 22px 12px; }
+        .page-heading { margin-bottom: 16px; }
+        .table-scroll { max-height: 55vh; }
+        .dialog-body { grid-template-columns: 1fr; }
+        .field.wide { grid-column: auto; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/">
+        <span class="brand-mark">A</span>
+        <span><strong>Atlas · Kiểm thử CSDL</strong><small>Chỉ dùng cho môi trường phát triển</small></span>
+      </a>
+      <a class="back-link" href="/">← Về trang bản đồ</a>
+    </header>
+    <div class="layout">
+      <aside>
+        <p class="aside-heading">DANH SÁCH BẢNG</p>
+        <input id="tableFilter" class="table-filter" type="search" placeholder="Lọc tên bảng..." aria-label="Lọc tên bảng" />
+        <nav id="tableList" class="table-list" aria-label="Các bảng trong cơ sở dữ liệu"></nav>
+      </aside>
+      <main>
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">DATABASE EXPLORER · TEST ONLY</p>
+            <h1 id="tableTitle">Đang kết nối...</h1>
+            <p id="subtitle" class="subheading">Đang tải danh sách bảng từ PostgreSQL.</p>
+          </div>
+          <div class="stats">
+            <div class="stat"><span>Schema</span><strong id="schemaName">—</strong></div>
+            <div class="stat"><span>Số bảng</span><strong id="tableCount">—</strong></div>
+          </div>
+        </div>
+        <div id="message" class="message" role="alert"></div>
+        <div class="toolbar">
+          <input id="rowSearch" class="search" type="search" placeholder="Tìm trong các cột của bảng..." aria-label="Tìm dữ liệu trong bảng" disabled />
+          <div class="import-tools">
+            <input id="excelFile" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
+            <button id="chooseExcelButton" class="button" type="button">Chọn file Excel</button>
+            <button id="addButton" class="button primary" type="button" disabled>＋ Thêm bản ghi</button>
+          </div>
+        </div>
+        <p class="import-help">Chọn một file Excel để hệ thống tự nhận diện bảng và ánh xạ cột, sau đó nhập ngay. Có thể có nhiều sheet; dữ liệu chỉ được ghi khi toàn bộ file hợp lệ. Ô trống dùng giá trị mặc định của CSDL; nhập <code>\N</code> để ghi NULL. Tối đa 10.000 dòng / 20 MB.</p>
+        <section class="table-card" aria-label="Dữ liệu bảng">
+          <div class="table-scroll">
+            <table>
+              <thead id="tableHead"></thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+            <div id="emptyState" class="empty" hidden>Chưa có dữ liệu hoặc chưa chọn bảng.</div>
+          </div>
+          <footer class="table-footer">
+            <span id="rowSummary">Chưa có dữ liệu</span>
+            <div class="pager">
+              <button id="previousPage" class="button small" type="button" disabled>Trước</button>
+              <button id="nextPage" class="button small" type="button" disabled>Sau</button>
+            </div>
+          </footer>
+        </section>
+      </main>
+    </div>
+    <dialog id="rowDialog">
+      <form id="rowForm">
+        <div class="dialog-head"><h2 id="dialogTitle">Thêm bản ghi</h2><button id="closeDialog" class="button small" type="button" aria-label="Đóng">✕</button></div>
+        <div id="dialogFields" class="dialog-body"></div>
+        <div class="dialog-actions"><button id="cancelDialog" class="button" type="button">Hủy</button><button class="button primary" type="submit">Lưu</button></div>
+      </form>
+    </dialog>
+    <dialog id="importDialog">
+      <div class="dialog-head"><h2>Kết quả nhập Excel</h2><button id="closeImportDialog" class="button small" type="button" aria-label="Đóng">✕</button></div>
+      <div style="padding:18px 22px">
+        <p id="importSummary" class="import-summary"></p>
+        <div id="importSuccess" class="import-success" hidden></div>
+        <ul id="importErrors" class="import-errors"></ul>
+      </div>
+      <div class="dialog-actions">
+        <button id="cancelImport" class="button" type="button">Đóng</button>
+      </div>
+    </dialog>
+    <script>
+      const state = { tables: [], currentTable: '', columns: [], primaryKey: [], rows: [], page: 1, total: 0, pageSize: 50, schema: '', search: '', mode: 'create', editingRow: null };
+      const excelImport = { file: null, busy: false };
+      const vietnameseTerms = {
+        '3d': '3D', ai: 'AI', am: 'âm', amenity: 'tiện ích', an: 'an', anh: 'ảnh', attp: 'an toàn thực phẩm',
+        audio: 'âm thanh', ban: 'bản', bao: 'bảo', bat: 'bắt', bay: 'bày', bi: 'bị', bien: 'biên',
+        biet: 'biết', bo: 'bộ', boundary: 'ranh giới', ca: 'cả', cach: 'cách', cam: 'cảm', can: 'cần',
+        canh: 'cảnh', cao: 'cao', cap: 'cấp', catalog: 'danh mục', cau: 'câu', cay: 'cây', chat: 'chất',
+        checkin: 'điểm check-in', chi: 'chi', chinh: 'chính', cho: 'chỗ', chu: 'chủ', chuc: 'chức',
+        chung: 'chứng', chup: 'chụp', chuyen: 'chuyển', co: 'có', column: 'cột', cong: 'công',
+        contributor: 'người đóng góp', coord: 'tọa độ', coverage: 'phạm vi', created: 'ngày tạo',
+        creator: 'người tạo', ct: 'chi tiết', cu: 'cũ', cua: 'của', cung: 'cung', dac: 'đặc',
+        dai: 'dài', dan: 'dân', dang: 'dạng', danh: 'danh', dat: 'đạt', data: 'dữ liệu', date: 'ngày',
+        de: 'để', dep: 'đẹp', description: 'mô tả', destination: 'điểm đến', di: 'di', dia: 'địa',
+        dich: 'dịch', diem: 'điểm', dien: 'diện', dieu: 'điều', dimension: 'kích thước', dinh: 'định',
+        do: 'độ', doc: 'đọc', doi: 'đối', don: 'đơn', dong: 'đồng', du: 'du', duong: 'đường',
+        email: 'email', en: 'tiếng Anh', f: 'F', faq: 'FAQ', file: 'tệp', floor: 'tầng',
+        format: 'định dạng', gan: 'gần', geography: 'tọa độ địa lý', geojson: 'GeoJSON',
+        geometry: 'hình học', ghi: 'ghi', gia: 'giá', giai: 'giải', gian: 'gian', giao: 'giao',
+        gio: 'giờ', gioi: 'giới', gis: 'GIS', goc: 'góc', goi: 'gọi', gop: 'góp', guide: 'hướng dẫn',
+        han: 'hạn', hang: 'hạng', hanh: 'hành', has: 'có', he: 'hệ', hien: 'hiện', hieu: 'hiệu',
+        hinh: 'hình', ho: 'hồ', hoa: 'hóa', hoat: 'hoạt', hoc: 'học', hoi: 'hỏi', hong: 'hỏng',
+        hop: 'hợp', hotline: 'đường dây nóng', hu: 'hư', huong: 'hướng', huyen: 'huyện', ich: 'ích',
+        icon: 'biểu tượng', id: 'mã', identifier: 'mã định danh', image: 'hình ảnh', json: 'JSON',
+        ke: 'kê', kenh: 'kênh', kha: 'khả', khac: 'khác', khach: 'khách', khai: 'khai',
+        khao: 'khảo', khoa: 'khoa', khoang: 'khoảng', khong: 'không', khu: 'khu', khuyen: 'khuyến',
+        khuyet: 'khuyết', kich: 'kích', kien: 'kiện', ky: 'kỹ', la: 'là', lai: 'lại', lan: 'lần',
+        lang: 'làng', language: 'ngôn ngữ', lao: 'lao', latitude: 'vĩ độ', le: 'lễ', level: 'cấp độ',
+        lich: 'lịch', lien: 'liên', lieu: 'liệu', linh: 'lĩnh', loai: 'loại', loi: 'lỗi',
+        longitude: 'kinh độ', luong: 'lượng', luu: 'lưu', ly: 'lý', m: 'm', ma: 'mã', mat: 'mặt',
+        mau: 'màu', media: 'đa phương tiện', metadata: 'siêu dữ liệu', mien: 'miền', mo: 'mô',
+        model: 'mô hình', mua: 'mua', muc: 'mục', nam: 'năm', nang: 'năng', ngay: 'ngày',
+        nghe: 'nghề', nghia: 'nghĩa', nghiem: 'nghiệm', ngon: 'ngôn', ngu: 'ngữ', nguoi: 'người',
+        nguon: 'nguồn', nguong: 'ngưỡng', nguy: 'nguy', nguyen: 'nguyên', nham: 'nhằm',
+        nhan: 'nhân', nhat: 'nhật', nhay: 'nhạy', nhom: 'nhóm', niem: 'niêm', nien: 'niên',
+        noi: 'nội', obj: 'đối tượng', ocop: 'OCOP', online: 'trực tuyến', panorama: 'toàn cảnh 360°',
+        pham: 'phẩm', phan: 'phân', phap: 'pháp', phat: 'phát', phep: 'phép', phi: 'phí',
+        phien: 'phiên', phoi: 'phối', phong: 'phòng', phu: 'phụ', phuc: 'phục', phuong: 'phương',
+        publisher: 'đơn vị xuất bản', qua: 'quá', quan: 'quan', quan_he: 'quan hệ', que: 'quê',
+        quy: 'quy', ranh: 'ranh', relation: 'quan hệ', rieng: 'riêng', rights: 'quyền',
+        san: 'sản', sang: 'sáng', sat: 'sát', scan: 'quét', schema: 'lược đồ', sinh: 'sinh',
+        slug: 'đường dẫn', so: 'số', source: 'nguồn', srid: 'mã hệ tọa độ', storytelling: 'kể chuyện',
+        su: 'sự', subject: 'chủ đề', suc: 'sức', ta: 'tả', tac: 'tác', tai: 'tại', tam: 'tâm',
+        tang: 'tầng', tao: 'tạo', tat: 'tắt', ten: 'tên', thai: 'thái', tham: 'tham',
+        than: 'thân', thanh: 'thành', thap: 'tháp', the: 'thể', thi: 'thị', thieu: 'thiếu',
+        tho: 'thờ', thoai: 'thoại', thoi: 'thời', thon: 'thôn', thong: 'thông', thu: 'thu',
+        thuat: 'thuật', thuc: 'thực', thuoc: 'thuộc', thuyet: 'thuyết', tich: 'tích',
+        tien: 'tiện', tieng: 'tiếng', tiep: 'tiếp', tieu: 'tiêu', tin: 'tin', tinh: 'tỉnh',
+        title: 'tiêu đề', to: 'tổ', toan: 'toàn', toc: 'tộc', tom: 'tóm', ton: 'tôn',
+        tong: 'tổng', tra: 'tra', trai: 'trải', trang: 'trạng', tre: 'trẻ', tri: 'trí',
+        trich: 'trích', trien: 'triển', triet: 'triệt', trinh: 'trình', tro: 'trợ',
+        trong: 'trong', truc: 'trực', trung: 'trung', truoc: 'trước', truyen: 'truyền',
+        tu: 'từ', tuc: 'tức', tuong: 'tượng', tuyen: 'tuyến', ty: 'tỷ', type: 'loại',
+        url: 'URL', vai: 'vai', van: 'văn', vat: 'vật', ve: 'về', version: 'phiên bản',
+        vi: 'vị', video: 'video', voi: 'với', vu: 'vụ', website: 'trang web', xa: 'xã',
+        xay: 'xây', xe: 'xe', xep: 'xếp', xom: 'xóm', xu: 'xử', y: 'y', yeu: 'yêu',
+        created_at: 'ngày tạo', updated_at: 'ngày cập nhật', ma_diem_den: 'Mã điểm đến',
+        ma_phan_khu: 'Mã phân khu', ma_diem_di_tich: 'Mã điểm di tích',
+        ma_hien_vat: 'Mã hiện vật', ma_tien_ich: 'Mã tiện ích',
+        ai_danh_nhan: 'Thuyết minh AI danh nhân',
+        audio_thuyet_minh: 'Âm thanh thuyết minh',
+        cau_chuyen_hien_vat: 'Câu chuyện hiện vật',
+        chi_tiet_tuyen: 'Chi tiết tuyến tham quan',
+        chu_the_san_xuat: 'Chủ thể sản xuất',
+        chung_nhan_ocop: 'Chứng nhận OCOP',
+        dac_diem_san_pham_ocop: 'Đặc điểm sản phẩm OCOP',
+        danh_nhan_lich_su_van_hoa: 'Danh nhân lịch sử văn hóa',
+        diem_checkin: 'Điểm check-in', diem_den: 'Điểm đến',
+        diem_di_tich: 'Điểm di tích', dm_loai_di_tich: 'Danh mục loại di tích',
+        dm_loai_diem_den: 'Danh mục loại điểm đến',
+        dm_loai_hien_vat: 'Danh mục loại hiện vật',
+        dm_loai_phan_khu: 'Danh mục loại phân khu',
+        dm_loai_tien_ich: 'Danh mục loại tiện ích',
+        doi_tuong_lien_quan: 'Đối tượng liên quan',
+        doi_tuong_nguon_tu_lieu: 'Đối tượng nguồn tư liệu',
+        doi_tuong_tu_khoa: 'Đối tượng từ khóa',
+        faq_chi_tiet: 'Câu hỏi thường gặp chi tiết',
+        faq_danh_nhan: 'Câu hỏi thường gặp về danh nhân',
+        gia_dich_vu: 'Giá dịch vụ', gia_tri_phan_khu: 'Giá trị phân khu',
+        gis_danh_nhan: 'Thông tin GIS danh nhân',
+        gis_doi_tuong: 'Thông tin GIS đối tượng',
+        hien_trang_bao_ton: 'Hiện trạng bảo tồn',
+        hien_vat_nhan_vat: 'Hiện vật và nhân vật',
+        hien_vat_su_kien: 'Hiện vật và sự kiện',
+        ho_so_khoa_hoc: 'Hồ sơ khoa học', ho_so_phap_ly: 'Hồ sơ pháp lý',
+        kha_nang_so_hoa: 'Khả năng số hóa',
+        knowledge_graph_danh_nhan: 'Đồ thị tri thức danh nhân',
+        lang_nghe_truyen_thong: 'Làng nghề truyền thống',
+        lich_su_phan_khu: 'Lịch sử phân khu',
+        media_danh_nhan: 'Tư liệu đa phương tiện danh nhân',
+        model_3d: 'Mô hình 3D', nguon_tu_lieu: 'Nguồn tư liệu',
+        nguyen_lieu_ocop: 'Nguyên liệu OCOP',
+        nhan_vat: 'Nhân vật', nhat_ky_khao_sat: 'Nhật ký khảo sát',
+        phan_khu: 'Phân khu', phan_phoi_ocop: 'Phân phối OCOP',
+        phuong_thuc_thanh_toan: 'Phương thức thanh toán',
+        quy_trinh_san_xuat_ocop: 'Quy trình sản xuất OCOP',
+        quan_he_danh_nhan_di_tich: 'Quan hệ danh nhân và di tích',
+        quan_he_danh_nhan_hien_vat: 'Quan hệ danh nhân và hiện vật',
+        quan_he_danh_nhan_le_hoi: 'Quan hệ danh nhân và lễ hội',
+        quan_he_khoang_cach: 'Quan hệ khoảng cách',
+        quan_he_tri_thuc: 'Quan hệ tri thức',
+        ranh_gioi_khong_gian: 'Ranh giới không gian',
+        san_pham_ocop_dac_san: 'Sản phẩm OCOP đặc sản',
+        su_kien_lich_su: 'Sự kiện lịch sử',
+        thoi_gian_phuc_vu: 'Thời gian phục vụ',
+        thuc_the_tri_thuc: 'Thực thể tri thức',
+        thuyet_minh_ai: 'Thuyết minh AI', tien_ich: 'Tiện ích',
+        trai_nghiem_du_lich_ocop: 'Trải nghiệm du lịch OCOP',
+        trich_dan_danh_nhan: 'Trích dẫn danh nhân',
+        tu_khoa: 'Từ khóa', tu_khoa_dong_nghia: 'Từ khóa đồng nghĩa',
+        tuyen_tham_quan: 'Tuyến tham quan',
+        video_thuyet_minh: 'Video thuyết minh',
+        chua: 'chứa', columns: 'các cột', den: 'đến', duc: 'dục', dung: 'dụng',
+        dm: 'danh mục', graph: 'đồ thị', knowledge: 'tri thức', minh: 'minh',
+        name: 'tên', quyet: 'quyết', table: 'bảng', tiet: 'tiết', xuat: 'xuất',
+        gia_tri: 'giá trị', gia_tri_giao_duc: 'Giá trị giáo dục',
+        gia_tri_noi_bat: 'Giá trị nổi bật', giao_duc: 'giáo dục',
+        thuyet_minh: 'thuyết minh', tri_thuc: 'tri thức',
+        tieu_de: 'tiêu đề', cau_hoi: 'câu hỏi', cau_tra_loi: 'câu trả lời',
+        chuc_vu: 'chức vụ', mo_ta: 'mô tả', dia_chi: 'địa chỉ',
+        dien_thoai: 'điện thoại', dien_tich: 'diện tích',
+        gioi_thieu: 'giới thiệu', lich_su: 'lịch sử',
+        lich_su_hinh_thanh: 'Lịch sử hình thành',
+        gio_mo_cua: 'giờ mở cửa', gio_dong_cua: 'giờ đóng cửa',
+        so_dien_thoai: 'số điện thoại', don_vi_quan_ly: 'đơn vị quản lý',
+        quan_ly: 'quản lý', trang_thai: 'trạng thái',
+        anh_dai_dien: 'ảnh đại diện', ten_loai: 'tên loại',
+        mau_hien_thi: 'màu hiển thị', noi_dung: 'nội dung',
+        noi_dung_cam: 'nội dung cấm', noi_dung_nhay_cam: 'nội dung nhạy cảm',
+        loai_doi_tuong: 'loại đối tượng', ma_doi_tuong: 'mã đối tượng',
+        thu_tu: 'thứ tự', so_quyet_dinh: 'số quyết định',
+        quyet_dinh: 'quyết định', ten_tieng_anh: 'tên tiếng Anh',
+        duong_dan_audio: 'đường dẫn âm thanh', duong_dan_video: 'đường dẫn video',
+        thoi_luong: 'thời lượng', thoi_luong_doc: 'thời lượng đọc',
+        dieu_kien_attp: 'điều kiện an toàn thực phẩm',
+        cach_su_dung: 'cách sử dụng', thoi_han_su_dung: 'thời hạn sử dụng',
+        suc_chua: 'sức chứa', bi_quyet_rieng: 'bí quyết riêng',
+        yeu_cau_ky_thuat: 'yêu cầu kỹ thuật'
+      };
+      const el = (id) => document.getElementById(id);
+      const capitalizeLabel = (label) => label.replace(/^./u, (letter) => letter.toLocaleUpperCase('vi-VN'));
+      const formatName = (name) => {
+        if (vietnameseTerms[name]) return capitalizeLabel(vietnameseTerms[name]);
+        const words = name.split('_').map((word) => vietnameseTerms[word] || word);
+        return capitalizeLabel(words.join(' '));
+      };
+      const formatDataType = (type) => ({
+        'character varying': 'chuỗi ký tự', varchar: 'chuỗi ký tự', text: 'văn bản',
+        integer: 'số nguyên', bigint: 'số nguyên lớn', smallint: 'số nguyên nhỏ',
+        numeric: 'số thập phân', 'double precision': 'số thập phân',
+        boolean: 'đúng/sai', date: 'ngày', 'timestamp without time zone': 'ngày giờ',
+        'timestamp with time zone': 'ngày giờ có múi giờ', json: 'JSON', jsonb: 'JSON',
+        geography: 'tọa độ địa lý', geometry: 'dữ liệu hình học', 'USER-DEFINED': 'kiểu dữ liệu riêng'
+      })[type] || type;
+      const message = (text) => { el('message').textContent = text; el('message').classList.toggle('visible', Boolean(text)); };
+      const displayValue = (value) => value === null || value === undefined ? '—' : typeof value === 'object' ? JSON.stringify(value) : String(value);
+      const api = async (path, options = {}) => {
+        const response = await fetch(path, { ...options, headers: { 'Content-Type': 'application/json', ...options.headers } });
+        const contentType = response.headers.get('content-type') || '';
+        const data = contentType.includes('application/json') ? await response.json() : await response.text();
+        if (!response.ok) throw new Error(typeof data === 'object' ? data.message || 'Yêu cầu không thành công.' : data);
+        return data;
+      };
+      const importApi = async (path) => {
+        const formData = new FormData();
+        formData.append('file', excelImport.file);
+        const response = await fetch(path, { method: 'POST', body: formData });
+        const result = await response.json();
+        if (!response.ok) {
+          const error = new Error(result.message || 'Không thể nhập file Excel.');
+          error.errors = result.errors || (Array.isArray(result.message) ? result.message : []);
+          error.totalRows = result.totalRows || 0;
+          error.tables = result.tables || [];
+          throw error;
+        }
+        return result;
+      };
+      const button = (label, className, handler) => {
+        const item = document.createElement('button');
+        item.type = 'button'; item.className = className; item.textContent = label; item.addEventListener('click', handler);
+        return item;
+      };
+
+      async function loadTables() {
+        try {
+          const result = await api('/test/api/tables');
+          state.tables = result.tables; state.schema = result.schema;
+          el('schemaName').textContent = result.schema; el('tableCount').textContent = result.tables.length;
+          renderTableList();
+          if (result.tables.length) await selectTable(result.tables[0]);
+          else { el('tableTitle').textContent = 'Chưa có bảng'; el('subtitle').textContent = `Không tìm thấy bảng nào trong schema "${result.schema}".`; }
+        } catch (error) {
+          el('tableTitle').textContent = 'Không thể kết nối CSDL';
+          el('subtitle').textContent = 'Kiểm tra cấu hình PostgreSQL rồi tải lại trang.';
+          message(error.message);
+          el('emptyState').hidden = false; el('emptyState').textContent = 'Không tải được dữ liệu.';
+        }
+      }
+
+      function renderTableList() {
+        const filter = el('tableFilter').value.trim().toLocaleLowerCase();
+        const list = el('tableList'); list.replaceChildren();
+        state.tables.filter((table) => table.toLocaleLowerCase().includes(filter)).forEach((table) => {
+          const item = button(formatName(table), `table-link${state.currentTable === table ? ' active' : ''}`, () => selectTable(table));
+          item.title = table;
+          list.append(item);
+        });
+      }
+
+      async function selectTable(table) {
+        state.currentTable = table; state.page = 1; state.search = '';
+        el('tableTitle').textContent = formatName(table); el('tableTitle').title = table; el('rowSearch').value = ''; el('rowSearch').disabled = false; el('addButton').disabled = false;
+        renderTableList(); await loadRows();
+      }
+
+      async function loadRows() {
+        if (!state.currentTable) return;
+        message('');
+        const params = new URLSearchParams({ page: String(state.page) });
+        if (state.search) params.set('q', state.search);
+        try {
+          const result = await api(`/test/api/tables/${encodeURIComponent(state.currentTable)}?${params}`);
+          Object.assign(state, { columns: result.columns, primaryKey: result.primaryKey, rows: result.rows, total: result.total, pageSize: result.pageSize });
+          el('subtitle').textContent = `${result.columns.length} trường · ${result.primaryKey.length ? `Khóa chính: ${result.primaryKey.map(formatName).join(', ')}` : 'Bảng chưa khai báo khóa chính (chỉ xem)'}`;
+          renderRows();
+        } catch (error) { message(error.message); }
+      }
+
+      function renderRows() {
+        const head = el('tableHead'); const body = el('tableBody');
+        head.replaceChildren(); body.replaceChildren();
+        const header = document.createElement('tr');
+        state.columns.forEach((column) => { const th = document.createElement('th'); th.textContent = formatName(column.columnName); th.title = `${column.columnName} · ${formatDataType(column.dataType)}`; header.append(th); });
+        const canChange = state.primaryKey.length > 0;
+        if (canChange) { const th = document.createElement('th'); th.textContent = 'Thao tác'; header.append(th); }
+        head.append(header);
+        state.rows.forEach((row) => {
+          const tr = document.createElement('tr');
+          state.columns.forEach((column) => {
+            const td = document.createElement('td'); td.textContent = displayValue(row[column.columnName]); td.title = td.textContent; tr.append(td);
+          });
+          if (canChange) {
+            const td = document.createElement('td'); const actions = document.createElement('div'); actions.className = 'actions';
+            actions.append(button('Sửa', 'button small', () => openDialog('edit', row)));
+            actions.append(button('Xóa', 'button small danger', () => deleteRow(row)));
+            td.append(actions); tr.append(td);
+          }
+          body.append(tr);
+        });
+        el('emptyState').hidden = state.rows.length > 0;
+        el('emptyState').textContent = state.total === 0 ? 'Bảng chưa có bản ghi phù hợp.' : 'Không có bản ghi trên trang này.';
+        el('rowSummary').textContent = `${state.total.toLocaleString('vi-VN')} bản ghi · Trang ${state.page}`;
+        el('previousPage').disabled = state.page <= 1;
+        el('nextPage').disabled = state.page * state.pageSize >= state.total;
+        el('addButton').disabled = !state.currentTable;
+      }
+
+      function openDialog(mode, row = null) {
+        if (!state.primaryKey.length && mode === 'edit') return;
+        state.mode = mode; state.editingRow = row;
+        el('dialogTitle').textContent = mode === 'create' ? `Thêm bản ghi · ${formatName(state.currentTable)}` : `Sửa bản ghi · ${formatName(state.currentTable)}`;
+        const fields = el('dialogFields'); fields.replaceChildren();
+        state.columns.forEach((column) => {
+          const wrapper = document.createElement('div'); wrapper.className = 'field';
+          if (['text', 'json', 'jsonb'].includes(column.dataType)) wrapper.classList.add('wide');
+          const label = document.createElement('label'); label.textContent = formatName(column.columnName);
+          label.title = column.columnName;
+          const typeHint = document.createElement('small'); typeHint.textContent = ` · ${formatDataType(column.dataType)}${column.isNullable === 'NO' ? ' · bắt buộc' : ''}`;
+          label.append(typeHint); wrapper.append(label);
+          let input;
+          if (column.dataType === 'boolean') {
+            input = document.createElement('select');
+            [['', '— Chọn —'], ['true', 'Có'], ['false', 'Không']].forEach(([value, title]) => { const option = document.createElement('option'); option.value = value; option.textContent = title; input.append(option); });
+          } else if (['text', 'json', 'jsonb'].includes(column.dataType)) input = document.createElement('textarea');
+          else input = document.createElement('input');
+          if (input instanceof HTMLInputElement) {
+            if (column.dataType.includes('timestamp')) input.type = 'datetime-local';
+            else if (column.dataType === 'date') input.type = 'date';
+            else if (['integer', 'bigint', 'smallint', 'numeric', 'decimal', 'real', 'double precision'].includes(column.dataType)) { input.type = 'number'; input.step = 'any'; }
+            else input.type = 'text';
+          }
+          input.name = column.columnName;
+          const value = row?.[column.columnName];
+          input.value = value === null || value === undefined ? '' : ['json', 'jsonb'].includes(column.dataType) && typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
+          input.disabled = (mode === 'edit' && column.isPrimaryKey) || column.isGenerated !== 'NEVER' || column.isIdentity === 'YES';
+          if (column.isNullable === 'NO' && !column.columnDefault && !input.disabled) input.required = true;
+          if (column.dataType === 'json' || column.dataType === 'jsonb') input.placeholder = 'Nhập JSON hợp lệ';
+          wrapper.append(input); fields.append(wrapper);
+        });
+        el('rowDialog').showModal();
+      }
+
+      async function submitForm(event) {
+        event.preventDefault();
+        const values = {};
+        for (const input of el('dialogFields').querySelectorAll('input, textarea, select')) {
+          if (input.disabled) continue;
+          const column = state.columns.find((item) => item.columnName === input.name);
+          if (!column) continue;
+          const raw = input.value;
+          if (!raw && column.columnDefault) continue;
+          if (!raw && column.isNullable === 'YES') { values[input.name] = null; continue; }
+          if (column.dataType === 'boolean') values[input.name] = raw === '' ? null : raw === 'true';
+          else if (['integer', 'bigint', 'smallint', 'numeric', 'decimal', 'real', 'double precision'].includes(column.dataType)) values[input.name] = raw === '' ? null : raw;
+          else if (column.dataType === 'json' || column.dataType === 'jsonb') {
+            try { values[input.name] = raw ? JSON.parse(raw) : null; } catch { message(`Trường ${formatName(input.name)} phải chứa JSON hợp lệ.`); input.focus(); return; }
+          } else values[input.name] = raw;
+        }
+        try {
+          if (state.mode === 'create') {
+            await api(`/test/api/tables/${encodeURIComponent(state.currentTable)}`, { method: 'POST', body: JSON.stringify({ values }) });
+          } else {
+            const key = Object.fromEntries(state.primaryKey.map((name) => [name, state.editingRow[name]]));
+            await api(`/test/api/tables/${encodeURIComponent(state.currentTable)}`, { method: 'PATCH', body: JSON.stringify({ key, values }) });
+          }
+          el('rowDialog').close(); await loadRows();
+        } catch (error) { message(error.message); }
+      }
+
+      async function deleteRow(row) {
+        const key = Object.fromEntries(state.primaryKey.map((name) => [name, row[name]]));
+        const displayKey = Object.fromEntries(Object.entries(key).map(([name, value]) => [formatName(name), value]));
+        if (!window.confirm(`Xóa bản ghi có khóa ${JSON.stringify(displayKey)}?`)) return;
+        try {
+          await api(`/test/api/tables/${encodeURIComponent(state.currentTable)}`, { method: 'DELETE', body: JSON.stringify({ key }) });
+          if (state.rows.length === 1 && state.page > 1) state.page -= 1;
+          await loadRows();
+        } catch (error) { message(error.message); }
+      }
+
+      function showImportResult(result, success) {
+        const tableSummary = result.tables
+          .map(({ tableName, rowCount }) => `${formatName(tableName)}: ${rowCount.toLocaleString('vi-VN')} dòng`)
+          .join(', ') || '0 bảng';
+        el('importSummary').textContent = `${success ? 'Đã nhập' : 'Không nhập'} ${result.totalRows.toLocaleString('vi-VN')} dòng · ${tableSummary}`;
+        el('importErrors').replaceChildren();
+        result.errors.forEach((error) => {
+          const item = document.createElement('li');
+          item.textContent = error;
+          el('importErrors').append(item);
+        });
+        el('importSuccess').hidden = !success;
+        el('importSuccess').textContent = success
+          ? 'Dữ liệu đã được nhập thành công.'
+          : '';
+        el('importDialog').showModal();
+      }
+
+      async function uploadExcelFile() {
+        if (!excelImport.file || excelImport.busy) return;
+        excelImport.busy = true;
+        el('chooseExcelButton').disabled = true;
+        el('chooseExcelButton').textContent = 'Đang nhập...';
+        message('');
+        try {
+          const result = await importApi('/test/api/import');
+          showImportResult({
+            totalRows: result.totalRows,
+            tables: result.tables,
+            errors: [],
+          }, true);
+          await loadRows();
+        } catch (error) {
+          showImportResult({
+            totalRows: error.totalRows || 0,
+            tables: error.tables || [],
+            errors: error.errors?.length ? error.errors : [error.message],
+          }, false);
+        } finally {
+          excelImport.busy = false;
+          excelImport.file = null;
+          el('excelFile').value = '';
+          el('chooseExcelButton').disabled = false;
+          el('chooseExcelButton').textContent = 'Chọn file Excel';
+        }
+      }
+
+      let searchTimer;
+      el('tableFilter').addEventListener('input', renderTableList);
+      el('rowSearch').addEventListener('input', () => {
+        window.clearTimeout(searchTimer);
+        searchTimer = window.setTimeout(() => { state.search = el('rowSearch').value.trim(); state.page = 1; loadRows(); }, 250);
+      });
+      el('addButton').addEventListener('click', () => openDialog('create'));
+      el('chooseExcelButton').addEventListener('click', () => el('excelFile').click());
+      el('excelFile').addEventListener('change', () => {
+        excelImport.file = el('excelFile').files?.[0] || null;
+        if (excelImport.file) uploadExcelFile();
+      });
+      el('closeImportDialog').addEventListener('click', () => el('importDialog').close());
+      el('cancelImport').addEventListener('click', () => el('importDialog').close());
+      el('rowForm').addEventListener('submit', submitForm);
+      el('closeDialog').addEventListener('click', () => el('rowDialog').close());
+      el('cancelDialog').addEventListener('click', () => el('rowDialog').close());
+      el('previousPage').addEventListener('click', () => { if (state.page > 1) { state.page -= 1; loadRows(); } });
+      el('nextPage').addEventListener('click', () => { if (state.page * state.pageSize < state.total) { state.page += 1; loadRows(); } });
+      loadTables();
+    </script>
+  </body>
+</html>

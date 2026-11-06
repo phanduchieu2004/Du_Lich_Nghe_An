@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#ffffff" />
+  <title>Atlas — Khám phá bản đồ Việt Nam</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+  <style>
+    :root { --ink: #192b34; --muted: #76868d; --green: #14836e; --green-dark: #0c6d5b; --line: #e8eeed; --surface: #fff; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body { font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: var(--ink); background: #e9f1ec; }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid #80cdb9; outline-offset: 2px; }
+    .app { height: 100%; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+    .topbar { height: 76px; flex: none; background: var(--surface); display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 0 30px; position: relative; z-index: 1001; box-shadow: 0 1px 12px #18312612; }
+    .brand { display: flex; align-items: center; gap: 11px; flex: none; text-decoration: none; color: var(--ink); }
+    .brand-icon { width: 39px; height: 39px; border-radius: 12px; background: var(--green); display: grid; place-items: center; color: white; box-shadow: 0 6px 13px #14836e37; }
+    .brand-icon svg { width: 23px; height: 23px; }
+    .brand-name { font-size: 23px; font-weight: 800; letter-spacing: -1.3px; }
+    .brand-name span { color: var(--green); }
+    .search-area { position: relative; width: min(490px, 48vw); }
+    .search { height: 44px; display: flex; align-items: center; gap: 10px; border: 1px solid #e2e9e7; background: #f8faf9; border-radius: 11px; padding: 0 6px 0 15px; transition: border-color .2s, box-shadow .2s; }
+    .search:focus-within { border-color: #7dbdab; box-shadow: 0 0 0 3px #d9f1e9; }
+    .search svg { width: 18px; height: 18px; flex: none; color: #8a9c9b; }
+    .search input { border: 0; outline: 0; background: none; flex: 1; width: 0; min-width: 0; color: var(--ink); font-size: 13px; }
+    .search input::placeholder { color: #98a8a6; }
+    .search button { border: 0; border-radius: 8px; background: var(--green); color: #fff; font-size: 12px; font-weight: 700; padding: 8px 14px; white-space: nowrap; }
+    .search button:hover { background: var(--green-dark); }
+    .search-results { display: none; position: absolute; top: calc(100% + 9px); left: 0; right: 0; border: 1px solid var(--line); border-radius: 13px; background: white; box-shadow: 0 15px 40px #233d3640; overflow: hidden; }
+    .search-results.open { display: block; }
+    .search-result { width: 100%; text-align: left; border: 0; border-bottom: 1px solid var(--line); background: white; padding: 12px 15px; color: var(--ink); font-size: 12px; line-height: 1.5; }
+    .search-result:hover { background: #f1f8f5; }
+    .search-info { margin: 0; padding: 15px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .search-credit { padding: 9px 15px; color: var(--muted); font-size: 10px; background: #f8faf9; }
+    .search-credit a { color: var(--green); }
+    .header-right { display: flex; align-items: center; gap: 13px; flex: none; }
+    .header-note { font-size: 12px; color: var(--muted); }
+    .location-button { height: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); font-size: 12px; font-weight: 700; white-space: nowrap; }
+    .location-button:hover { background: #f4f9f7; border-color: #a9d6c9; }
+    .location-button svg { width: 17px; height: 17px; color: var(--green); }
+    .map-layout { position: relative; flex: 1; min-height: 0; }
+    #map { position: absolute; inset: 0; z-index: 1; }
+    .explore-panel { position: absolute; z-index: 500; top: 22px; left: 22px; bottom: 22px; width: 320px; display: flex; flex-direction: column; background: #fff; border: 1px solid #edf0ec; border-radius: 17px; box-shadow: 0 14px 40px #30443b2c; overflow: hidden; }
+    .panel-top { padding: 27px 23px 20px; border-bottom: 1px solid var(--line); }
+    .eyebrow { display: flex; align-items: center; gap: 7px; color: var(--green); font-size: 10px; font-weight: 800; letter-spacing: 1.8px; text-transform: uppercase; margin: 0 0 10px; }
+    .eyebrow::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+    h1 { font-size: 25px; line-height: 1.18; letter-spacing: -.9px; margin: 0 0 10px; }
+    .panel-top > p:last-child { font-size: 12px; line-height: 1.65; color: var(--muted); margin: 0; }
+    .panel-content { overflow-y: auto; padding: 20px 13px 16px; scrollbar-width: thin; }
+    .list-label { font-size: 10px; letter-spacing: 1.1px; font-weight: 800; color: #96a4a2; margin: 0 10px 12px; }
+    .place-list { display: grid; gap: 5px; }
+    .place { width: 100%; padding: 12px 10px; border: 1px solid transparent; border-radius: 11px; background: #fff; display: flex; gap: 11px; text-align: left; align-items: center; transition: background .2s, border-color .2s; }
+    .place:hover { background: #f6faf8; }
+    .place.active { background: #f1f8f5; border-color: #d7eae3; }
+    .place-icon { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; flex: none; color: var(--green); background: #e5f4ee; }
+    .place-icon svg { width: 19px; height: 19px; }
+    .place:nth-child(2) .place-icon { color: #558fbd; background: #eaf3fb; }
+    .place:nth-child(3) .place-icon { color: #c3805b; background: #faf0e8; }
+    .place:nth-child(4) .place-icon { color: #aa86b9; background: #f6edf8; }
+    .place-text { flex: 1; min-width: 0; }
+    .place-text strong { display: block; font-size: 12px; margin-bottom: 4px; }
+    .place-text small { color: var(--muted); font-size: 11px; }
+    .place-arrow { width: 17px; height: 17px; flex: none; color: #abbab4; }
+    .panel-bottom { margin-top: auto; border-top: 1px solid var(--line); padding: 15px 22px; background: #fcfdfc; display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 11px; }
+    .panel-bottom svg { width: 15px; height: 15px; color: var(--green); flex: none; }
+    .map-tip { position: absolute; z-index: 400; bottom: 25px; left: 360px; border: 1px solid #e8eeeb; border-radius: 9px; padding: 10px 13px; background: #fff; box-shadow: 0 4px 14px #31453c24; font-size: 11px; color: #647972; pointer-events: none; }
+    .map-tip strong { color: var(--green); }
+    .leaflet-control-zoom { border: 0 !important; box-shadow: 0 4px 16px #263a3440 !important; overflow: hidden; border-radius: 10px !important; }
+    .leaflet-control-zoom a { width: 36px !important; height: 36px !important; line-height: 36px !important; color: var(--ink) !important; border-color: var(--line) !important; }
+    .leaflet-control-zoom a:hover { background: #f1f8f5 !important; color: var(--green) !important; }
+    .leaflet-top.leaflet-right { margin: 12px 13px 0 0; }
+    .leaflet-control-attribution { font-size: 10px !important; background: #ffffffdf !important; }
+    .leaflet-control-attribution a { color: var(--green) !important; }
+    .map-pin { width: 34px; height: 34px; position: relative; display: grid; place-items: center; border-radius: 50% 50% 50% 5px; background: var(--green); border: 3px solid #fff; box-shadow: 0 3px 13px #172c2c60; transform: rotate(-45deg); }
+    .map-pin span { display: block; width: 11px; height: 11px; border-radius: 50%; background: #fff; }
+    .map-pin.selected { background: #e28751; }
+    .map-pin.user { background: #4488d3; }
+    .popup-title { margin: 0 0 4px; font-weight: 800; color: var(--ink); font-size: 13px; }
+    .popup-description { margin: 0; font-size: 11px; line-height: 1.5; color: var(--muted); }
+    .toast { position: absolute; bottom: 25px; left: 50%; z-index: 900; transform: translate(-50%, 12px); opacity: 0; pointer-events: none; background: #1f3733; color: #fff; border-radius: 9px; padding: 11px 16px; box-shadow: 0 8px 20px #263a3440; font-size: 12px; transition: opacity .2s, transform .2s; white-space: nowrap; max-width: 90vw; overflow: hidden; text-overflow: ellipsis; }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    @media (max-width: 850px) {
+      .topbar { padding: 0 16px; gap: 12px; }
+      .header-note { display: none; }
+      .search-area { width: auto; flex: 1; }
+      .explore-panel { width: 280px; }
+      .map-tip { left: 318px; }
+    }
+    @media (max-width: 650px) {
+      .topbar { height: 64px; }
+      .brand { gap: 0; }
+      .brand-name { display: none; }
+      .brand-icon { width: 35px; height: 35px; border-radius: 10px; }
+      .search { height: 38px; padding-left: 10px; gap: 5px; }
+      .search input { font-size: 12px; }
+      .search button { padding: 7px 9px; font-size: 11px; }
+      .location-button { width: 38px; height: 38px; justify-content: center; padding: 0; }
+      .location-button span { display: none; }
+      .explore-panel { top: auto; left: 12px; right: 12px; bottom: 13px; width: auto; max-height: min(257px, 42vh); border-radius: 14px; }
+      .panel-top { padding: 13px 17px 9px; }
+      .eyebrow { margin-bottom: 3px; font-size: 9px; }
+      h1 { font-size: 17px; margin-bottom: 0; }
+      .panel-top > p:last-child, .panel-bottom { display: none; }
+      .panel-content { padding: 9px 11px 12px; }
+      .list-label { margin-bottom: 3px; }
+      .place-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px; }
+      .place { padding: 8px 5px; gap: 7px; }
+      .place-icon { width: 29px; height: 29px; border-radius: 8px; }
+      .place-icon svg { width: 15px; height: 15px; }
+      .place-text strong { font-size: 11px; margin: 0; }
+      .place-text small, .place-arrow, .map-tip { display: none; }
+      .toast { bottom: min(280px, calc(42vh + 35px)); font-size: 11px; }
+      .leaflet-bottom.leaflet-right { bottom: min(274px, calc(42vh + 30px)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Atlas - Trang bản đồ"><span class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2V5ZM9 3v16M15 5v16"/><path d="m11.5 10 1.5 3 1.5-3"/></svg></span><span class="brand-name">at<span>las.</span></span></a>
+      <div class="search-area"><form class="search" id="searchForm" role="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4 4"/></svg><input id="searchInput" type="search" aria-label="Tìm địa điểm" placeholder="Tìm địa điểm trên bản đồ..." autocomplete="off" /><button type="submit">Tìm kiếm</button></form><div class="search-results" id="searchResults" aria-live="polite"></div></div>
+      <div class="header-right">
+        <span class="header-note">Bản đồ mở, khám phá tự do</span>
+        <a class="location-button" href="/chuc-nang" title="Mở trang chức năng" aria-label="Các chức năng">
+          <span>Các chức năng</span>
+        </a>
+        <%- include('../nut-chuc-nang/danh-sach', { buttonIds: ['vi-tri-cua-toi'] }) %>
+      </div>
+    </header>
+    <main class="map-layout" aria-label="Bản đồ OpenStreetMap">
+      <div id="map" aria-label="Bản đồ Việt Nam"></div>
+      <aside class="explore-panel" aria-labelledby="panelTitle"><div class="panel-top"><p class="eyebrow">BẢN ĐỒ KHÁM PHÁ</p><h1 id="panelTitle">Việt Nam trong tầm mắt.</h1><p>Khám phá những điểm đến nổi bật hoặc tìm bất kỳ địa điểm nào bạn muốn.</p></div><div class="panel-content"><p class="list-label">ĐỊA ĐIỂM GỢI Ý</p><div class="place-list" id="placeList"></div></div><div class="panel-bottom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>Nhấp vào địa điểm để khám phá trên bản đồ.</div></aside>
+      <div class="map-tip">Bản đồ nền bởi <strong>OpenStreetMap</strong> · Kéo để di chuyển, cuộn để thu phóng</div>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </main>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+  <script>
+    const places = [
+      { name: 'Hà Nội', detail: 'Thủ đô · Miền Bắc', description: 'Thủ đô ngàn năm văn hiến của Việt Nam.', lat: 21.0285, lng: 105.8542, zoom: 13 },
+      { name: 'Đà Nẵng', detail: 'Thành phố biển · Miền Trung', description: 'Thành phố ven biển với những cây cầu nổi tiếng.', lat: 16.0544, lng: 108.2022, zoom: 13 },
+      { name: 'TP. Hồ Chí Minh', detail: 'Đô thị sôi động · Miền Nam', description: 'Trung tâm kinh tế năng động của Việt Nam.', lat: 10.8231, lng: 106.6297, zoom: 13 },
+      { name: 'Hội An', detail: 'Phố cổ · Quảng Nam', description: 'Di sản văn hóa với những con phố rực rỡ ánh đèn.', lat: 15.8801, lng: 108.3380, zoom: 15 }
+    ];
+
+    const map = L.map('map', { zoomControl: false }).setView([16.15, 106.15], 6);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'
+    }).addTo(map);
+    L.control.zoom({ position: 'topright', zoomInTitle: 'Phóng to', zoomOutTitle: 'Thu nhỏ' }).addTo(map);
+
+    function pinIcon(type = '') {
+      return L.divIcon({ className: '', html: `<div class="map-pin ${type}"><span></span></div>`, iconSize: [34, 40], iconAnchor: [17, 36], popupAnchor: [0, -36] });
+    }
+    function popupContent(title, detail) {
+      const container = document.createElement('div');
+      const heading = document.createElement('p');
+      const description = document.createElement('p');
+      heading.className = 'popup-title'; description.className = 'popup-description';
+      heading.textContent = title; description.textContent = detail;
+      container.append(heading, description);
+      return container;
+    }
+    const placeList = document.getElementById('placeList');
+    const placeMarkers = places.map((place, index) => {
+      const marker = L.marker([place.lat, place.lng], { icon: pinIcon() }).addTo(map).bindPopup(popupContent(place.name, place.description));
+      const button = document.createElement('button');
+      button.className = 'place'; button.type = 'button';
+      button.innerHTML = '<span class="place-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg></span><span class="place-text"><strong></strong><small></small></span><svg class="place-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>';
+      button.querySelector('strong').textContent = place.name;
+      button.querySelector('small').textContent = place.detail;
+      button.addEventListener('click', () => selectPlace(index));
+      marker.on('click', () => selectPlace(index, false));
+      placeList.append(button);
+      return marker;
+    });
+    function selectPlace(index, fly = true) {
+      document.querySelectorAll('.place').forEach((button, i) => button.classList.toggle('active', i === index));
+      placeMarkers.forEach((marker, i) => marker.setIcon(pinIcon(i === index ? 'selected' : '')));
+      const place = places[index];
+      if (fly) map.flyTo([place.lat, place.lng], place.zoom, { duration: 1.2 });
+      setTimeout(() => placeMarkers[index].openPopup(), fly ? 1100 : 0);
+    }
+
+    let toastTimer;
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message; toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 3400);
+    }
+    let userMarker;
+    let accuracyCircle;
+    document.getElementById('locateButton').addEventListener('click', () => {
+      if (!navigator.geolocation) { showToast('Trình duyệt này không hỗ trợ định vị.'); return; }
+      showToast('Đang xác định vị trí của bạn...');
+      map.locate({ setView: true, maxZoom: 15, enableHighAccuracy: true, timeout: 12000 });
+    });
+    map.on('locationfound', event => {
+      if (userMarker) map.removeLayer(userMarker);
+      if (accuracyCircle) map.removeLayer(accuracyCircle);
+      userMarker = L.marker(event.latlng, { icon: pinIcon('user') }).addTo(map).bindPopup(popupContent('Vị trí của bạn', 'Vị trí gần đúng dựa trên thiết bị của bạn.')).openPopup();
+      accuracyCircle = L.circle(event.latlng, { radius: event.accuracy, color: '#4488d3', fillColor: '#4488d3', fillOpacity: .1, weight: 1 }).addTo(map);
+      showToast('Đã tìm thấy vị trí của bạn.');
+    });
+    map.on('locationerror', () => showToast('Không thể xác định vị trí. Hãy kiểm tra quyền truy cập vị trí.'));
+
+    const searchForm = document.getElementById('searchForm');
+    const searchInput = document.getElementById('searchInput');
+    const resultsBox = document.getElementById('searchResults');
+    let searchMarker;
+    let searchController;
+    let lastSearchAt = 0;
+    function resultMessage(message) {
+      resultsBox.replaceChildren();
+      const text = document.createElement('p'); text.className = 'search-info'; text.textContent = message;
+      resultsBox.append(text); resultsBox.classList.add('open');
+    }
+    searchForm.addEventListener('submit', async event => {
+      event.preventDefault();
+      const query = searchInput.value.trim();
+      if (!query) { searchInput.focus(); return; }
+      // Nominatim chỉ được gọi khi người dùng gửi tìm kiếm, không tự động gợi ý.
+      if (Date.now() - lastSearchAt < 1100) { showToast('Vui lòng đợi một giây trước khi tìm tiếp.'); return; }
+      lastSearchAt = Date.now();
+      if (searchController) searchController.abort();
+      searchController = new AbortController();
+      resultMessage('Đang tìm địa điểm...');
+      try {
+        const url = new URL('https://nominatim.openstreetmap.org/search');
+        url.search = new URLSearchParams({ q: query, format: 'jsonv2', limit: '5', 'accept-language': 'vi' }).toString();
+        const response = await fetch(url, { signal: searchController.signal });
+        if (!response.ok) throw new Error('Search unavailable');
+        const results = await response.json();
+        resultsBox.replaceChildren();
+        if (!results.length) { resultMessage('Không tìm thấy địa điểm. Hãy thử một từ khóa khác.'); return; }
+        results.forEach(result => {
+          const button = document.createElement('button');
+          button.className = 'search-result'; button.type = 'button';
+          button.textContent = result.display_name;
+          button.addEventListener('click', () => {
+            const lat = Number(result.lat), lng = Number(result.lon);
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+            if (searchMarker) map.removeLayer(searchMarker);
+            searchMarker = L.marker([lat, lng], { icon: pinIcon('selected') }).addTo(map).bindPopup(popupContent(result.name || result.display_name.split(',')[0], result.display_name));
+            map.flyTo([lat, lng], 14, { duration: 1.2 });
+            setTimeout(() => searchMarker.openPopup(), 1100);
+            searchInput.value = result.display_name.split(',')[0];
+            resultsBox.classList.remove('open');
+          });
+          resultsBox.append(button);
+        });
+        const credit = document.createElement('div');
+        credit.className = 'search-credit';
+        credit.innerHTML = 'Kết quả từ <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> / Nominatim';
+        resultsBox.append(credit); resultsBox.classList.add('open');
+      } catch (error) {
+        if (error.name !== 'AbortError') resultMessage('Không thể tìm kiếm lúc này. Vui lòng thử lại sau.');
+      }
+    });
+    searchInput.addEventListener('input', () => resultsBox.classList.remove('open'));
+    document.addEventListener('click', event => { if (!event.target.closest('.search-area')) resultsBox.classList.remove('open'); });
+    document.addEventListener('keydown', event => { if (event.key === 'Escape') resultsBox.classList.remove('open'); });
+  </script>
+</body>
+</html>
