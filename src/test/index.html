@@ -25,6 +25,7 @@
       .brand-mark { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 11px; color: white; background: var(--green); font-weight: 800; }
       .brand strong { font-size: 15px; }
       .brand small { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; font-weight: 500; }
+      .topbar-actions { display: flex; align-items: center; gap: 18px; }
       .back-link { color: var(--green); text-decoration: none; font-size: 13px; font-weight: 700; }
       .layout { min-height: calc(100vh - 68px); display: grid; grid-template-columns: 265px minmax(0, 1fr); }
       aside { padding: 22px 14px; background: #fff; border-right: 1px solid var(--line); }
@@ -79,6 +80,8 @@
       .field textarea { min-height: 78px; resize: vertical; }
       .field input:focus, .field textarea:focus, .field select:focus { border-color: #8bc7b6; box-shadow: 0 0 0 3px #e0f3ed; }
       .field input:disabled { background: #f3f6f4; color: #87948e; }
+      .media-upload { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+      .media-upload-status { color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
       .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 22px; border-top: 1px solid var(--line); }
       .import-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
       .import-help { margin: 0 0 14px; color: var(--muted); font-size: 12px; line-height: 1.65; }
@@ -113,7 +116,10 @@
         <span class="brand-mark">A</span>
         <span><strong>Atlas · Kiểm thử CSDL</strong><small>Chỉ dùng cho môi trường phát triển</small></span>
       </a>
-      <a class="back-link" href="/">← Về trang bản đồ</a>
+      <nav class="topbar-actions" aria-label="Điều hướng">
+        <a class="back-link" href="/test/media">Thư viện media</a>
+        <a class="back-link" href="/">← Về trang bản đồ</a>
+      </nav>
     </header>
     <div class="layout">
       <aside>
@@ -180,7 +186,7 @@
       </div>
     </dialog>
     <script>
-      const state = { tables: [], currentTable: '', columns: [], primaryKey: [], rows: [], page: 1, total: 0, pageSize: 50, schema: '', search: '', mode: 'create', editingRow: null };
+      const state = { tables: [], currentTable: '', columns: [], primaryKey: [], rows: [], page: 1, total: 0, pageSize: 50, schema: '', search: '', mode: 'create', editingRow: null, mediaUploadInProgress: false };
       const excelImport = { file: null, busy: false };
       const vietnameseTerms = {
         '3d': '3D', ai: 'AI', am: 'âm', amenity: 'tiện ích', an: 'an', anh: 'ảnh', attp: 'an toàn thực phẩm',
@@ -356,6 +362,18 @@
         }
         return result;
       };
+      const isMediaUrlColumn = (name) => /url|link|duong_dan|(?:^|_)(?:audio|video|media|anh|hinh|image|file|tep)(?:_|$)/i.test(name);
+      const uploadApi = async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await fetch('/test/api/upload', { method: 'POST', body: formData });
+        const result = await response.json();
+        if (!response.ok) {
+          const errorMessage = Array.isArray(result.message) ? result.message.join(' ') : result.message;
+          throw new Error(errorMessage || 'Không thể tải tệp lên Cloudinary.');
+        }
+        return result;
+      };
       const button = (label, className, handler) => {
         const item = document.createElement('button');
         item.type = 'button'; item.className = className; item.textContent = label; item.addEventListener('click', handler);
@@ -461,20 +479,63 @@
             else input.type = 'text';
           }
           input.name = column.columnName;
+          input.dataset.columnValue = 'true';
           const value = row?.[column.columnName];
           input.value = value === null || value === undefined ? '' : ['json', 'jsonb'].includes(column.dataType) && typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
           input.disabled = (mode === 'edit' && column.isPrimaryKey) || column.isGenerated !== 'NEVER' || column.isIdentity === 'YES';
           if (column.isNullable === 'NO' && !column.columnDefault && !input.disabled) input.required = true;
           if (column.dataType === 'json' || column.dataType === 'jsonb') input.placeholder = 'Nhập JSON hợp lệ';
           wrapper.append(input); fields.append(wrapper);
+          if (!input.disabled && isMediaUrlColumn(column.columnName) && ['character varying', 'varchar', 'text', 'character'].includes(column.dataType)) {
+            const uploadButton = button('Tải tệp lên Cloudinary', 'button small media-upload-button', () => fileInput.click());
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*,audio/*,video/*';
+            fileInput.hidden = true;
+            const uploadStatus = document.createElement('span');
+            uploadStatus.className = 'media-upload-status';
+            const uploadTools = document.createElement('div');
+            uploadTools.className = 'media-upload';
+            uploadTools.append(uploadButton, fileInput, uploadStatus);
+            fileInput.addEventListener('change', () => {
+              const file = fileInput.files?.[0];
+              fileInput.value = '';
+              if (file) uploadMediaFile(file, input, uploadStatus);
+            });
+            wrapper.append(uploadTools);
+          }
         });
         el('rowDialog').showModal();
       }
 
+      async function uploadMediaFile(file, target, status) {
+        if (state.mediaUploadInProgress) return;
+        state.mediaUploadInProgress = true;
+        const uploadButtons = [...el('dialogFields').querySelectorAll('.media-upload-button')];
+        uploadButtons.forEach((item) => { item.disabled = true; });
+        status.textContent = `Đang tải ${file.name} lên Cloudinary...`;
+        message('');
+        try {
+          const result = await uploadApi(file);
+          target.value = result.secureUrl;
+          status.textContent = `Đã tải lên: ${file.name}`;
+        } catch (error) {
+          status.textContent = error.message;
+          message(error.message);
+        } finally {
+          state.mediaUploadInProgress = false;
+          uploadButtons.forEach((item) => { item.disabled = false; });
+        }
+      }
+
       async function submitForm(event) {
         event.preventDefault();
+        if (state.mediaUploadInProgress) {
+          message('Vui lòng đợi tải tệp lên Cloudinary hoàn tất.');
+          return;
+        }
         const values = {};
-        for (const input of el('dialogFields').querySelectorAll('input, textarea, select')) {
+        for (const input of el('dialogFields').querySelectorAll('[data-column-value]')) {
           if (input.disabled) continue;
           const column = state.columns.find((item) => item.columnName === input.name);
           if (!column) continue;

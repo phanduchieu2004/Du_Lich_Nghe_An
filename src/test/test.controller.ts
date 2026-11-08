@@ -17,6 +17,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Response } from 'express';
+import { MediaUploadService } from './media-upload.service.js';
 import { TestService } from './test.service.js';
 
 interface UploadedExcelFile {
@@ -26,7 +27,10 @@ interface UploadedExcelFile {
 
 @Controller('test')
 export class TestController {
-  constructor(private readonly testService: TestService) {}
+  constructor(
+    private readonly testService: TestService,
+    private readonly mediaUploadService: MediaUploadService,
+  ) {}
 
   @Get()
   showPage(@Res() response: Response): void {
@@ -36,6 +40,21 @@ export class TestController {
     response.sendFile(
       join(dirname(fileURLToPath(import.meta.url)), 'index.html'),
     );
+  }
+
+  @Get('media')
+  showMediaPage(@Res() response: Response): void {
+    if (process.env.NODE_ENV === 'production') {
+      throw new NotFoundException();
+    }
+    response.sendFile(
+      join(dirname(fileURLToPath(import.meta.url)), 'media.html'),
+    );
+  }
+
+  @Get('api/media')
+  getMediaLibrary() {
+    return this.testService.getMediaLibrary();
   }
 
   @Get('api/tables')
@@ -80,6 +99,19 @@ export class TestController {
   )
   importExcel(@UploadedFile() file: UploadedExcelFile | undefined) {
     return this.testService.importExcel(this.getExcelBuffer(file));
+  }
+
+  @Post('api/upload')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 100 * 1024 * 1024, files: 1 },
+    }),
+  )
+  uploadMedia(
+    @UploadedFile()
+    file: { buffer: Buffer; mimetype: string } | undefined,
+  ) {
+    return this.mediaUploadService.upload(file);
   }
 
   private getExcelBuffer(file: UploadedExcelFile | undefined): Buffer {

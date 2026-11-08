@@ -108,6 +108,20 @@ không hợp lệ sẽ làm toàn bộ file bị từ chối, không ghi dữ li
 trị `NULL`. Các bảng được sắp thứ tự khóa ngoại và nhập trong một giao dịch.
 Giới hạn file là 20 MB và 10.000 dòng dữ liệu tổng cộng.
 
+### Lưu tệp thuyết minh trên Cloudinary
+
+Trang `/test` hỗ trợ tải ảnh, âm thanh và video từ máy lên Cloudinary khi thêm
+hoặc sửa bản ghi. Tạo `.env` từ `.env.example`, sau đó điền
+`CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` và `CLOUDINARY_API_SECRET` bằng
+thông tin trong Cloudinary Dashboard. Không gửi API Secret qua chat hoặc commit
+`.env`. Khởi động lại ứng dụng sau khi cập nhật cấu hình.
+
+Trong biểu mẫu, chọn tệp ở trường đường dẫn media; URL bảo mật do Cloudinary
+trả về sẽ tự điền vào trường đó. Lưu biểu mẫu để ghi URL vào PostgreSQL. Giới
+hạn tải lên là 100 MB mỗi tệp. Trang `/test` chỉ hoạt động ngoài production.
+Mở `/test/media` để xem ảnh và phát audio/video được lưu trong các bảng media;
+thư viện chỉ hiển thị những bản ghi có URL Cloudinary.
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.

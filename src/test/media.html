@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f4f7f5" />
+    <title>Thư viện media | Atlas</title>
+    <style>
+      :root {
+        font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #1b302c;
+        background: #f4f7f5;
+        --green: #14836e;
+        --muted: #74837f;
+        --line: #e4ebe7;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-width: 320px; }
+      a { color: inherit; }
+      button { font: inherit; cursor: pointer; }
+      .topbar { height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 28px; background: #fff; border-bottom: 1px solid var(--line); }
+      .brand { display: flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; }
+      .brand-mark { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 11px; color: white; background: var(--green); font-weight: 800; }
+      .brand strong { font-size: 15px; }
+      .brand small { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; font-weight: 500; }
+      .back-link { color: var(--green); text-decoration: none; font-size: 13px; font-weight: 700; }
+      main { width: min(1180px, calc(100% - 40px)); margin: 36px auto 60px; }
+      .heading { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: 22px; }
+      .eyebrow { margin: 0 0 7px; color: var(--green); font-size: 10px; font-weight: 800; letter-spacing: 1.4px; }
+      h1 { margin: 0; font-size: clamp(24px, 4vw, 32px); letter-spacing: -.7px; }
+      .description { max-width: 680px; margin: 9px 0 0; color: var(--muted); font-size: 13px; line-height: 1.65; }
+      .toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 22px 0 18px; }
+      .filters { display: flex; flex-wrap: wrap; gap: 7px; }
+      .filter { min-height: 35px; padding: 0 13px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: #53635e; font-size: 12px; font-weight: 700; }
+      .filter.active { border-color: var(--green); background: var(--green); color: #fff; }
+      .search { width: min(310px, 100%); min-height: 37px; padding: 0 12px; border: 1px solid var(--line); border-radius: 9px; outline: 0; background: #fff; font: inherit; font-size: 12px; }
+      .search:focus { border-color: #8bc7b6; box-shadow: 0 0 0 3px #e0f3ed; }
+      .status { margin: 0 0 16px; color: var(--muted); font-size: 12px; }
+      .status.error { padding: 12px 14px; border: 1px solid #f0d7be; border-radius: 9px; background: #fff8f1; color: #80522d; }
+      .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 16px; }
+      .card { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 13px; background: #fff; }
+      .preview { display: grid; min-height: 190px; place-items: center; overflow: hidden; background: #15241f; }
+      .preview img, .preview video { display: block; width: 100%; max-height: 360px; object-fit: contain; }
+      .preview audio { width: calc(100% - 28px); }
+      .file-preview { color: #d6e5df; font-size: 13px; }
+      .card-content { display: grid; gap: 9px; padding: 15px; }
+      .card-title { margin: 0; font-size: 15px; line-height: 1.4; overflow-wrap: anywhere; }
+      .card-description { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.55; overflow-wrap: anywhere; }
+      .meta { display: flex; flex-wrap: wrap; gap: 6px; color: var(--muted); font-size: 10px; }
+      .meta span { padding: 4px 7px; border-radius: 6px; background: #f1f6f3; }
+      .open-link { width: fit-content; color: var(--green); font-size: 11px; font-weight: 700; text-decoration: none; }
+      .open-link:hover { text-decoration: underline; }
+      .empty { padding: 54px 20px; border: 1px dashed #cbd9d2; border-radius: 13px; color: var(--muted); text-align: center; font-size: 13px; line-height: 1.7; }
+      .empty[hidden] { display: none; }
+      @media (max-width: 600px) {
+        .topbar { height: 60px; padding: 0 15px; }
+        main { width: calc(100% - 26px); margin-top: 25px; }
+        .toolbar { align-items: stretch; }
+        .search { width: 100%; }
+        .gallery { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/test">
+        <span class="brand-mark">A</span>
+        <span><strong>Atlas · Thư viện media</strong><small>Chỉ dùng cho môi trường phát triển</small></span>
+      </a>
+      <a class="back-link" href="/test">← Về kiểm thử CSDL</a>
+    </header>
+    <main>
+      <section class="heading">
+        <div>
+          <p class="eyebrow">CLOUDINARY · MEDIA TEST</p>
+          <h1>Video, âm thanh và hình ảnh</h1>
+          <p class="description">Xem ảnh và phát audio/video đã tải lên Cloudinary, dựa trên URL được lưu trong các bản ghi media của PostgreSQL.</p>
+        </div>
+      </section>
+      <section class="toolbar" aria-label="Lọc thư viện">
+        <div class="filters" role="group" aria-label="Loại tư liệu">
+          <button class="filter active" type="button" data-filter="all">Tất cả</button>
+          <button class="filter" type="button" data-filter="video">Video</button>
+          <button class="filter" type="button" data-filter="audio">Âm thanh</button>
+          <button class="filter" type="button" data-filter="image">Hình ảnh</button>
+          <button class="filter" type="button" data-filter="file">Khác</button>
+        </div>
+        <input id="search" class="search" type="search" placeholder="Tìm theo tiêu đề, mô tả..." aria-label="Tìm tư liệu" />
+      </section>
+      <p id="status" class="status" role="status">Đang tải thư viện...</p>
+      <section id="gallery" class="gallery" aria-label="Tư liệu Cloudinary"></section>
+      <div id="empty" class="empty" hidden>
+        Chưa có bản ghi media nào chứa URL Cloudinary.<br />
+        Hãy tải tệp lên từ trang <a href="/test">Kiểm thử CSDL</a>, lưu URL vào bản ghi rồi tải lại trang này.
+      </div>
+    </main>
+    <script>
+      const state = { items: [], filter: 'all', search: '' };
+      const element = (id) => document.getElementById(id);
+      const typeNames = { image: 'Hình ảnh', audio: 'Âm thanh', video: 'Video', file: 'Tệp media' };
+      const sourceNames = {
+        audio_thuyet_minh: 'Âm thanh thuyết minh',
+        video_thuyet_minh: 'Video thuyết minh',
+        media: 'Đa phương tiện',
+        media_danh_nhan: 'Tư liệu danh nhân',
+      };
+
+      function createMediaCard(item) {
+        const card = document.createElement('article');
+        card.className = 'card';
+        const preview = document.createElement('div');
+        preview.className = 'preview';
+        if (item.type === 'image') {
+          const image = document.createElement('img');
+          image.src = item.url;
+          image.alt = item.title;
+          image.loading = 'lazy';
+          preview.append(image);
+        } else if (item.type === 'video') {
+          const video = document.createElement('video');
+          video.src = item.url;
+          video.controls = true;
+          video.preload = 'metadata';
+          video.playsInline = true;
+          preview.append(video);
+        } else if (item.type === 'audio') {
+          const audio = document.createElement('audio');
+          audio.src = item.url;
+          audio.controls = true;
+          audio.preload = 'metadata';
+          preview.append(audio);
+        } else {
+          const label = document.createElement('span');
+          label.className = 'file-preview';
+          label.textContent = 'Mở tệp media';
+          preview.append(label);
+        }
+
+        const content = document.createElement('div');
+        content.className = 'card-content';
+        const title = document.createElement('h2');
+        title.className = 'card-title';
+        title.textContent = item.title;
+        content.append(title);
+        if (item.description) {
+          const description = document.createElement('p');
+          description.className = 'card-description';
+          description.textContent = item.description;
+          content.append(description);
+        }
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        [typeNames[item.type], sourceNames[item.source] || item.source, item.objectId ? `${item.objectType || 'Đối tượng'} · ${item.objectId}` : null]
+          .filter(Boolean)
+          .forEach((value) => {
+            const tag = document.createElement('span');
+            tag.textContent = value;
+            meta.append(tag);
+          });
+        content.append(meta);
+        const open = document.createElement('a');
+        open.className = 'open-link';
+        open.href = item.url;
+        open.target = '_blank';
+        open.rel = 'noopener noreferrer';
+        open.textContent = item.type === 'image' ? 'Mở ảnh gốc ↗' : 'Mở trên Cloudinary ↗';
+        content.append(open);
+        card.append(preview, content);
+        return card;
+      }
+
+      function render() {
+        const items = state.items.filter((item) => {
+          const matchesType = state.filter === 'all' || item.type === state.filter;
+          const text = `${item.title} ${item.description || ''} ${item.source}`.toLocaleLowerCase('vi');
+          return matchesType && text.includes(state.search);
+        });
+        const gallery = element('gallery');
+        gallery.replaceChildren(...items.map(createMediaCard));
+        element('empty').hidden = items.length > 0;
+        if (state.items.length === 0) {
+          element('empty').hidden = false;
+          element('status').textContent = '0 tư liệu Cloudinary';
+        } else {
+          element('status').textContent = `${items.length} / ${state.items.length} tư liệu`;
+        }
+      }
+
+      async function loadMedia() {
+        const status = element('status');
+        status.classList.remove('error');
+        status.textContent = 'Đang tải thư viện...';
+        try {
+          const response = await fetch('/test/api/media');
+          const result = await response.json();
+          if (!response.ok) {
+            throw new Error(Array.isArray(result.message) ? result.message.join(' ') : result.message || 'Không thể tải thư viện media.');
+          }
+          if (!Array.isArray(result)) {
+            throw new Error('Dữ liệu thư viện media trả về không hợp lệ.');
+          }
+          state.items = result;
+          render();
+        } catch (error) {
+          status.classList.add('error');
+          status.textContent = error.message || 'Không thể tải thư viện media.';
+          element('gallery').replaceChildren();
+          element('empty').hidden = true;
+        }
+      }
+
+      document.querySelectorAll('[data-filter]').forEach((button) => {
+        button.addEventListener('click', () => {
+          document.querySelectorAll('[data-filter]').forEach((item) => item.classList.toggle('active', item === button));
+          state.filter = button.dataset.filter;
+          render();
+        });
+      });
+      element('search').addEventListener('input', () => {
+        state.search = element('search').value.trim().toLocaleLowerCase('vi');
+        render();
+      });
+      loadMedia();
+    </script>
+  </body>
+</html>

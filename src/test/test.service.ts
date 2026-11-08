@@ -59,6 +59,17 @@ export interface ExcelImportResult {
   tables: Array<{ tableName: string; rowCount: number }>;
 }
 
+export interface MediaLibraryItem {
+  id: string;
+  type: 'image' | 'audio' | 'video' | 'file';
+  title: string;
+  description: string | null;
+  url: string;
+  source: string;
+  objectType: string | null;
+  objectId: string | null;
+}
+
 const IMPORT_TABLE_ALIASES: Record<string, string> = {
   mau_1b_khu_vuc: 'phan_khu',
   '1b_khu_vuc': 'phan_khu',
@@ -164,6 +175,64 @@ export class TestService {
       page,
       pageSize: PAGE_SIZE,
     };
+  }
+
+  async getMediaLibrary(): Promise<MediaLibraryItem[]> {
+    const schema = this.quoteIdentifier(this.schemaName);
+    const pool = this.getPool();
+    const [audio, video, media, mediaDanhNhan] = await Promise.all([
+      pool.query(
+        `SELECT ma_audio::text AS id, tieu_de AS title, NULL::text AS description,
+                duong_dan_audio AS url, 'audio_thuyet_minh' AS source,
+                loai_doi_tuong AS "objectType", ma_doi_tuong::text AS "objectId",
+                'audio' AS "mediaType"
+         FROM ${schema}."audio_thuyet_minh"
+         WHERE NULLIF(BTRIM(duong_dan_audio), '') IS NOT NULL`,
+      ),
+      pool.query(
+        `SELECT ma_video::text AS id, tieu_de AS title, mo_ta AS description,
+                duong_dan_video AS url, 'video_thuyet_minh' AS source,
+                loai_doi_tuong AS "objectType", ma_doi_tuong::text AS "objectId",
+                'video' AS "mediaType"
+         FROM ${schema}."video_thuyet_minh"
+         WHERE NULLIF(BTRIM(duong_dan_video), '') IS NOT NULL`,
+      ),
+      pool.query(
+        `SELECT media_id::text AS id, tieu_de AS title, mo_ta AS description,
+                duong_dan AS url, 'media' AS source,
+                loai_doi_tuong AS "objectType", ma_doi_tuong::text AS "objectId",
+                loai_media AS "mediaType"
+         FROM ${schema}."media"
+         WHERE NULLIF(BTRIM(duong_dan), '') IS NOT NULL`,
+      ),
+      pool.query(
+        `SELECT media_id::text AS id, 'Tư liệu danh nhân' AS title, mo_ta AS description,
+                duong_dan AS url, 'media_danh_nhan' AS source,
+                'danh_nhan' AS "objectType", ma_danh_nhan::text AS "objectId",
+                loai_media AS "mediaType"
+         FROM ${schema}."media_danh_nhan"
+         WHERE NULLIF(BTRIM(duong_dan), '') IS NOT NULL`,
+      ),
+    ]);
+
+    return [...audio.rows, ...video.rows, ...media.rows, ...mediaDanhNhan.rows]
+      .filter((row) => this.isCloudinaryUrl(row.url))
+      .map((row) => ({
+        id: row.id as string,
+        type: this.mediaType(row.mediaType, row.url as string),
+        title:
+          typeof row.title === 'string' && row.title.trim()
+            ? row.title.trim()
+            : 'Tư liệu thuyết minh',
+        description:
+          typeof row.description === 'string' ? row.description : null,
+        url: row.url as string,
+        source: row.source as string,
+        objectType:
+          typeof row.objectType === 'string' ? row.objectType : null,
+        objectId: typeof row.objectId === 'string' ? row.objectId : null,
+      }))
+      .sort((first, second) => first.title.localeCompare(second.title, 'vi'));
   }
 
   async createRow(tableName: string, input: unknown): Promise<JsonRecord> {
@@ -967,6 +1036,68 @@ export class TestService {
 
   private quoteIdentifier(identifier: string): string {
     return `"${identifier.replaceAll('"', '""')}"`;
+  }
+
+  private isCloudinaryUrl(value: unknown): value is string {
+    if (typeof value !== 'string') {
+      return false;
+    }
+    try {
+      const url = new URL(value);
+      return (
+        url.protocol === 'https:' &&
+        (url.hostname === 'cloudinary.com' ||
+          url.hostname.endsWith('.cloudinary.com'))
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  private mediaType(value: unknown, mediaUrl: string): MediaLibraryItem['type'] {
+    const path = new URL(mediaUrl).pathname.toLocaleLowerCase('en-US');
+    const typeName = typeof value === 'string' ? value : '';
+    const normalized = typeName
+      .toLocaleLowerCase('vi')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    if (/(audio|am_thanh|am-thanh)/.test(normalized)) {
+      return 'audio';
+    }
+    if (/(video)/.test(normalized)) {
+      return 'video';
+    }
+    if (/(image|hinh|anh|photo)/.test(normalized)) {
+      return 'image';
+    }
+
+    const extension = path.match(/\.([a-z0-9]+)$/)?.[1];
+    if (
+      extension &&
+      ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac', 'opus'].includes(extension)
+    ) {
+      return 'audio';
+    }
+    if (
+      extension &&
+      ['mp4', 'mov', 'm4v', 'webm', 'avi', 'mkv', 'm3u8'].includes(extension)
+    ) {
+      return 'video';
+    }
+    if (
+      extension &&
+      ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif', 'svg'].includes(extension)
+    ) {
+      return 'image';
+    }
+
+    if (path.includes('/image/upload/')) {
+      return 'image';
+    }
+    if (path.includes('/video/upload/')) {
+      return 'video';
+    }
+    return 'file';
   }
 
   private get schemaName(): string {
